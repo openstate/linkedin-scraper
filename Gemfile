@@ -5,3 +5,4 @@ gem "httparty"
 gem "rack"
 
 gem "linkedin"
+gem "shotgun"
