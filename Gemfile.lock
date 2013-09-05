@@ -1,11 +1,17 @@
 GEM
   remote: https://rubygems.org/
   specs:
+    hashie (2.0.5)
     httparty (0.11.0)
       multi_json (~> 1.0)
       multi_xml (>= 0.5.2)
+    linkedin (0.4.2)
+      hashie (>= 1.2, < 2.1)
+      multi_json (~> 1.0)
+      oauth (~> 0.4)
     multi_json (1.7.9)
     multi_xml (0.5.5)
+    oauth (0.4.7)
     rack (1.5.2)
     rack-protection (1.5.0)
       rack
@@ -20,5 +26,6 @@ PLATFORMS
 
 DEPENDENCIES
   httparty
+  linkedin
   rack
   sinatra
