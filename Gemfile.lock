@@ -5,6 +5,7 @@ GEM
     httparty (0.11.0)
       multi_json (~> 1.0)
       multi_xml (>= 0.5.2)
+    inifile (2.0.2)
     linkedin (0.4.2)
       hashie (>= 1.2, < 2.1)
       multi_json (~> 1.0)
@@ -28,6 +29,7 @@ PLATFORMS
 
 DEPENDENCIES
   httparty
+  inifile (~> 2.0.2)
   linkedin
   rack
   shotgun

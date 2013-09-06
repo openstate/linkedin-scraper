@@ -4,5 +4,6 @@ gem "sinatra"
 gem "httparty"
 gem "rack"
 
+gem "inifile", "~> 2.0.2"
 gem "linkedin"
 gem "shotgun"
