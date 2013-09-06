@@ -9,7 +9,7 @@ require 'linkedin'
 require 'inifile'
 
 inifile = IniFile.new( :filename => 'linkedin.ini', :encoding => 'UTF-8' )
-puts inifile.inspect
+#puts inifile.inspect
 
 # get your api keys at https://www.linkedin.com/secure/developer
 client = LinkedIn::Client.new(inifile['application']['key'], inifile['application']['secret'])
@@ -29,6 +29,24 @@ auth_token = inifile['user']['token']
 auth_secret = inifile['user']['secret']
 client.authorize_from_access(auth_token, auth_secret)
 
-puts client.profile.inspect
+#puts client.profile.inspect
 
-puts client.connections.inspect
+#puts client.connections.inspect
+
+client.connections[:all].each do |connection|
+  full_connection = client.profile(:id => connection.id, :fields => %w(positions))
+  begin
+    companies = full_connection.positions.all.map{|t| t.company}
+    company_name = companies[0].name
+  rescue Exception => e
+    company_name = "<unknown>"
+  end
+  
+  #puts full_connection.inspect
+  puts [
+    "%s %s" % [connection.first_name, connection.last_name],
+    connection.industry,
+    company_name
+  ].join(",")
+  sleep(1)
+end
