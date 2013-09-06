@@ -30,3 +30,5 @@ auth_secret = inifile['user']['secret']
 client.authorize_from_access(auth_token, auth_secret)
 
 puts client.profile.inspect
+
+puts client.connections.inspect
