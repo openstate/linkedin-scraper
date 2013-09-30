@@ -8,6 +8,38 @@ require 'httparty'
 require 'linkedin'
 require 'inifile'
 
+def scrape_person(connections, depth, client, cached_profiles)
+  new_profiles = {}
+  i = 0
+  connections[:all].each do |connection|
+    i += 1
+    next if i > 5
+    next if cached_profiles.has_key?(connection.id)
+    full_connection = client.profile(:id => connection.id, :fields => %w(positions connections))
+    puts full_connection.connections
+    new_profiles[connection.id] = full_connection
+
+    begin
+      companies = full_connection.positions.all.map{|t| t.company}
+      company_name = companies[0].name
+    rescue Exception => e
+      company_name = "<unknown>"
+    end
+
+    #puts full_connection.inspect
+    puts [
+      depth,
+      #{}"%s %s" % [profile.first_name, profile.last_name],
+      "%s %s" % [connection.first_name, connection.last_name],
+      connection.industry,
+      company_name
+    ].join(",")
+    sleep(1)
+  end
+  
+  new_profiles
+end
+
 inifile = IniFile.new( :filename => 'linkedin.ini', :encoding => 'UTF-8' )
 #puts inifile.inspect
 
@@ -33,20 +65,22 @@ client.authorize_from_access(auth_token, auth_secret)
 
 #puts client.connections.inspect
 
-client.connections[:all].each do |connection|
-  full_connection = client.profile(:id => connection.id, :fields => %w(positions))
-  begin
-    companies = full_connection.positions.all.map{|t| t.company}
-    company_name = companies[0].name
-  rescue Exception => e
-    company_name = "<unknown>"
+#cached_profiles = scrape_person(client.connections, 1, client, {})
+#second_level_profiles = cached_profiles.values
+
+offset = 0
+total = 100
+while (offset < total) do
+  results = client.search(
+    :start => offset,
+    :fields => [{ :people => %w(id first-name last-name api-standard-profile-request)}],
+    :facet => 'network,S'
+  )
+
+  total = results[:people][:total]
+  results[:people][:all].each do |result|
+    puts "%s %s" % [result[:first_name], result[:last_name]]
   end
-  
-  #puts full_connection.inspect
-  puts [
-    "%s %s" % [connection.first_name, connection.last_name],
-    connection.industry,
-    company_name
-  ].join(",")
+  offset = offset + results[:people][:all].length
   sleep(1)
 end
