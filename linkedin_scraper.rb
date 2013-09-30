@@ -10,10 +10,10 @@ require 'inifile'
 
 def serialize_profile(profile)
   info = {
+    :id => profile.id,
     :first_name => profile.first_name,
     :last_name => profile.last_name
   }
-  
   begin
     info[:distance] = profile.distance    
   rescue Exception => e
@@ -25,39 +25,8 @@ def serialize_profile(profile)
   rescue Exception => e
     info[:companies] = []
   end
-  
-end
 
-def scrape_person(connections, depth, client, cached_profiles)
-  new_profiles = {}
-  i = 0
-  connections[:all].each do |connection|
-    i += 1
-    next if i > 5
-    next if cached_profiles.has_key?(connection.id)
-    full_connection = client.profile(:id => connection.id, :fields => %w(positions connections))
-    puts full_connection.connections
-    new_profiles[connection.id] = full_connection
-
-    begin
-      companies = full_connection.positions.all.map{|t| t.company}
-      company_name = companies[0].name
-    rescue Exception => e
-      company_name = "<unknown>"
-    end
-
-    #puts full_connection.inspect
-    puts [
-      depth,
-      #{}"%s %s" % [profile.first_name, profile.last_name],
-      "%s %s" % [connection.first_name, connection.last_name],
-      connection.industry,
-      company_name
-    ].join(",")
-    sleep(1)
-  end
-  
-  new_profiles
+  info
 end
 
 inifile = IniFile.new( :filename => 'linkedin.ini', :encoding => 'UTF-8' )
@@ -86,7 +55,7 @@ client.authorize_from_access(auth_token, auth_secret)
 #puts client.connections.inspect
 
 profiles = []
-client.connections[:all].each do |connection|
+client.connections(:fields => %w(id first-name last_name positions))[:all].each do |connection|
   profiles << serialize_profile(connection)
 end
 
@@ -98,18 +67,25 @@ total = 100
 while (offset < total) do
   results = client.search(
     :start => offset,
-    :fields => [{ :people => %w(id first-name last-name api-standard-profile-request distance relation-to-viewer)}],
+    :fields => [{ :people => %w(id first-name last-name api-standard-profile-request distance relation-to-viewer positions)}],
     :facet => 'network,S'
   )
 
   total = results[:people][:total]
+  #puts results.inspect
   results[:people][:all].each do |result|
     begin
-      profile = client.profile(:id => result[:id], :fields => %w(positions relation-to-viewer:(related-connections:(first_name,last_name))))
-      #puts profile.inspect
+      profile = client.profile(:id => result[:id], :fields => %w(relation-to-viewer))
       #puts "%s %s" % [result[:first_name], result[:last_name]]
-      puts result[:relation_to_viewer].keys.inspect
-      profiles << serialize_profile(result)      
+      #puts result[:relation_to_viewer].keys.inspect
+      info = serialize_profile(result)
+      begin
+        info[:connections] = profile.relation_to_viewer.connections.all.map { |connection| serialize_profile(connection.person) }        
+      rescue Exception => e
+        info[:connections] = []
+      end
+      #puts JSON.generate(info)
+      profiles << info
     rescue Exception => e
       
     end
