@@ -8,6 +8,26 @@ require 'httparty'
 require 'linkedin'
 require 'inifile'
 
+def serialize_profile(profile)
+  info = {
+    :first_name => profile.first_name,
+    :last_name => profile.last_name
+  }
+  
+  begin
+    info[:distance] = profile.distance    
+  rescue Exception => e
+    info[:distance] = 1 # default ...
+  end
+  
+  begin
+    info[:companies] = profile.positions.all.map{|t| t.company}
+  rescue Exception => e
+    info[:companies] = []
+  end
+  
+end
+
 def scrape_person(connections, depth, client, cached_profiles)
   new_profiles = {}
   i = 0
@@ -65,6 +85,11 @@ client.authorize_from_access(auth_token, auth_secret)
 
 #puts client.connections.inspect
 
+profiles = []
+client.connections[:all].each do |connection|
+  profiles << serialize_profile(connection)
+end
+
 #cached_profiles = scrape_person(client.connections, 1, client, {})
 #second_level_profiles = cached_profiles.values
 
@@ -79,11 +104,19 @@ while (offset < total) do
 
   total = results[:people][:total]
   results[:people][:all].each do |result|
-    profile = client.profile(:id => result[:id], :fields => %w(relation-to-viewer))
-    puts profile.inspect
-    puts "%s %s" % [result[:first_name], result[:last_name]]
-    puts result[:relation_to_viewer].keys.inspect
+    begin
+      profile = client.profile(:id => result[:id], :fields => %w(positions relation-to-viewer:(related-connections:(first_name,last_name))))
+      #puts profile.inspect
+      #puts "%s %s" % [result[:first_name], result[:last_name]]
+      puts result[:relation_to_viewer].keys.inspect
+      profiles << serialize_profile(result)      
+    rescue Exception => e
+      
+    end
+    
   end
   offset = offset + results[:people][:all].length
   sleep(1)
 end
+
+puts JSON.generate(profiles)
