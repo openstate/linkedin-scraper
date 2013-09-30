@@ -73,13 +73,16 @@ total = 100
 while (offset < total) do
   results = client.search(
     :start => offset,
-    :fields => [{ :people => %w(id first-name last-name api-standard-profile-request)}],
+    :fields => [{ :people => %w(id first-name last-name api-standard-profile-request distance relation-to-viewer)}],
     :facet => 'network,S'
   )
 
   total = results[:people][:total]
   results[:people][:all].each do |result|
+    profile = client.profile(:id => result[:id], :fields => %w(relation-to-viewer))
+    puts profile.inspect
     puts "%s %s" % [result[:first_name], result[:last_name]]
+    puts result[:relation_to_viewer].keys.inspect
   end
   offset = offset + results[:people][:all].length
   sleep(1)
